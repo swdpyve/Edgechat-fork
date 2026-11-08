@@ -26,47 +26,16 @@ jobs:
       - name: Build frontend assets
         run: npm run build
 
-      # 1. 替换真实 ID，并删除 R2 配置
+      # 只替换 ID 和删 R2
       - name: Generate wrangler config for CI
         shell: bash
         run: |
           cp wrangler.example.toml wrangler.ci.toml
           sed -i "s|YOUR_D1_DATABASE_ID_HERE|${{ secrets.REAL_D1_ID }}|g" wrangler.ci.toml
           sed -i "s|YOUR_KV_NAMESPACE_ID_HERE|${{ secrets.REAL_KV_ID }}|g" wrangler.ci.toml
-          # 彻底删除 R2 块，确保是纯文字版
           sed -i '/^\[\[r2_buckets\]\]$/,/^$/d' wrangler.ci.toml
 
-      # 2. 跑数据库迁移（更新表结构）
-      - name: Apply D1 migrations
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
-          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
-          EDGECHAT_D1_DATABASE_ID: ${{ secrets.REAL_D1_ID }}
-        run: |
-          node .github/scripts/prepare-d1-migrations.mjs
-          npx wrangler d1 execute cfchat-db --remote --file .tmp/edgechat-d1-migrations.sql --config wrangler.ci.toml
-
-      # 3. 同步管理员账号密码
-      - name: Sync administrator credentials
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
-          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
-          EDGECHAT_D1_DATABASE_ID: ${{ secrets.REAL_D1_ID }}
-          EDGECHAT_ADMIN_USERNAME: ${{ secrets.EDGECHAT_ADMIN_USERNAME }}
-          EDGECHAT_ADMIN_PASSWORD: ${{ secrets.EDGECHAT_ADMIN_PASSWORD }}
-        shell: bash
-        run: |
-          if [[ -n "$EDGECHAT_ADMIN_USERNAME" && -n "$EDGECHAT_ADMIN_PASSWORD" ]]; then
-            node .github/scripts/sync-admin-credentials.ts
-          else
-            echo "Skipping admin sync; credentials not provided."
-          fi
-
-      # 4. 最终部署（带上了 Global API Key 和 Email 认证）
+      # 直接部署（带 Global API Key）
       - name: Deploy worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
