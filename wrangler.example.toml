@@ -38,11 +38,11 @@ simple = { limit = 120, period = 60 }
 [[d1_databases]]
 binding = "DB"
 database_name = "cfchat-db"
-database_id = "YOUR_D1_DATABASE_ID_HERE"
+database_id = "6b4dc830-6caa-4355-a399-aa5d1e844905"
 
 [[kv_namespaces]]
 binding = "SESSIONS"
-id = "YOUR_KV_NAMESPACE_ID_HERE"
+id = "e56d7ba763744c78b8439caa9d1befe8"
 
 #[[r2_buckets]]
 #binding = "FILES"
